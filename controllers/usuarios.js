@@ -1,49 +1,93 @@
 const { response } = require('express');
+const bcryptjs = require('bcryptjs');
 
-const usuariosGet =  (req, res = response) => {
+
+const Usuario = require('../models/usuario')
+
+const usuariosGet =  async (req, res = response) => {
     
-    const { q, nombre = 'No name', apikey, page = 1, limit } = req.query;
-    
+    const { limite = 5, desde = 0 } = req.query;
+    const query = { estado: true }
+
+    /*Esta es una manera de hacerlo, pero para optimizar recursos se peude hacer con primse.all
+    /*
+    const usuarios = await Usuario.find( query )
+        .skip( Number( desde) ) //Traer los registros a partir de un registro especifico
+        .limit( Number( limite) ); //Define el limite de los registros a traer
+
+    const total = await Usuario.countDocuments( query );
+    */
+
+    //Esta es una manera de hacer la misma consulta con un mejor tiempo de respuesta
+    const [total, usuarios ] = await Promise.all([
+        Usuario.countDocuments( query ),
+        Usuario.find( query )
+            .skip( Number( desde) ) //Traer los registros a partir de un registro especifico
+            .limit( Number( limite) ) //Define el limite de los registros a traer
+    ])
+
     res.json({
-        msg: "Get Api - Controller",
-        q,
-        nombre,
-        apikey,
-        page,
-        limit
-    })
+        total,
+        usuarios
+    });
 }
 
-const usuariosPut = (req, res) => {
+const usuariosPut = async (req, res) => {
 
-    const id = req.params.id;
+    const { id } = req.params;
+    const { _id, password, google, correo, ...resto } = req.body;
 
-    res.status(400).json({
-        msg: "put Api - Controller",
-        id
-    })
-}
+    // TODO: validar contra base de datos
 
-const usuariosPost = (req, res) => {
+    if ( password ){
+         //Encriptar contraseña
+        const salt = bcryptjs.genSaltSync();
+        resto.password = bcryptjs.hashSync( password.toString(), salt );
+    }
     
-    const { nombre, edad } = req.body;
+    const usuario = await Usuario.findByIdAndUpdate( id, resto ); 
+
+    res.status(400).json( usuario );
+}
+
+const usuariosPost = async (req, res) => {
+    
+    const { nombre, correo, password, rol } = req.body;
+
+    const usuario = new Usuario({ nombre, correo, password, rol });
+
+    //Encriptar contraseña
+    const salt = bcryptjs.genSaltSync();
+    usuario.password = bcryptjs.hashSync( password.toString(), salt );
+
+    //Guardar en bd
+    await usuario.save();
 
     res.status(201).json({
-        msg: "post Api - Controller",
-        nombre, edad
-    })
+        usuario
+    });
 }
 
-const usuariosDelete = (req, res) => {
-    res.json({
-        msg: "delete Api - Controller"
-    })
+const usuariosDelete = async (req, res) => {
+
+    const { id } = req.params;
+
+    //Fisicamente se borra -> No es recomendado
+    //const usuario = await Usuario.findByIdAndDelete( id );
+
+    //Se cambia el estado de acivo o innactivo
+    const usuario = await Usuario.findByIdAndUpdate( id, { estado: false } );
+
+
+    res.json(
+        usuario
+    );
 }
 
 const usuariosPatch = (req, res) => {
     res.json({
         msg: "patch Api - Controller"
-    })
+    });
 }
 
 module.exports = {

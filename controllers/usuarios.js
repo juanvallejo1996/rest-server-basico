@@ -45,7 +45,7 @@ const usuariosPut = async (req, res) => {
         resto.password = bcryptjs.hashSync( password.toString(), salt );
     }
     
-    const usuario = await Usuario.findByIdAndUpdate( id, resto ); 
+    const usuario = await Usuario.findByIdAndUpdate( id, resto, { new: true}  ); 
 
     res.status(400).json( usuario );
 }
@@ -72,12 +72,11 @@ const usuariosDelete = async (req, res) => {
 
     const { id } = req.params;
 
-    //Fisicamente se borra -> No es recomendado
-    //const usuario = await Usuario.findByIdAndDelete( id );
-
     //Se cambia el estado de acivo o innactivo
-    const usuario = await Usuario.findByIdAndUpdate( id, { estado: false } );
-
+    const usuario = await Usuario.findByIdAndUpdate( id, { estado: false }, { new: true} );
+    
+    //En caso tal de querer ver el usuario logueado
+    //const usuarioAutenticado = req.usuario;
 
     res.json(
         usuario

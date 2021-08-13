@@ -1,7 +1,19 @@
 const { Router } = require('express');
 const { check } = require('express-validator');
 
-const { validarCampos } = require('../middelware/validar-campos');
+// const { validarCampos } = require('../middelware/validar-campos');
+// const { validarJWT } = require('../middelware/validar-jwt');
+// const { esAdminRole, tieneRole } = require('../middelware/validar-roles');
+
+//Aquí se importa todo lo del middelware, mediante el index
+const {
+    validarCampos,
+    validarJWT,
+    esAdminRole, 
+    tieneRole
+} = require('../middelware');
+
+
 const { esRoleValido, emailExiste, existeUsuarioPorId } = require('../helpers/db-validators');
 
 const { usuariosGet, 
@@ -9,7 +21,6 @@ const { usuariosGet,
         usuariosPost, 
         usuariosDelete, 
         usuariosPatch } = require('../controllers/usuarios');
-
 
 const router = Router();
 
@@ -40,6 +51,9 @@ router.post('/', [
 ], usuariosPost);
 
 router.delete('/:id', [
+    validarJWT,
+    //esAdminRole, //Este middelware fuerza a que el usuario sea dministrador
+    tieneRole( 'ADMIN_ROLE', 'VENTAS_ROLE' ),
     check('id', 'No es un ID válido').isMongoId(),
     check('id').custom( existeUsuarioPorId ),
     validarCampos //Esta función que está en middelware, hace que las validaciones retornen el error y no sigan al controller

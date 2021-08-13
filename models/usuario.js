@@ -39,7 +39,8 @@ const UsuarioSchema = Schema({
 //Se hace con una función normal, por el this, del scope que maneja, con función flecha no sirve
 UsuarioSchema.methods.toJSON = function(){
 
-    const { __v, password, ...usuario } = this.toObject();
+    const { __v, password, _id, ...usuario } = this.toObject();
+    usuario.uid = _id;
     return usuario;
 
 }
